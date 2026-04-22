@@ -1,0 +1,5 @@
+TechniqueID,TechniqueName,Tactic,Cluster,CNI,Phase,Result,Detail,Timestamp
+"T1599","IPv6 Enforcement Gap Bypass","Defense Evasion","kind-calico-cluster","Calico (iptables)","phase3","ERROR","No IPv6 pod IPs on this cluster — IPv6 not enabled in KIND config","20260420_181130"
+"T1571","Non-Standard Port Bypass","Command and Control","kind-calico-cluster","Calico (iptables)","phase3","BLOCKED","All non-standard ports blocked — default-deny correctly covers all unlisted ports","20260420_181130"
+"T1611","hostNetwork Pod NetworkPolicy Bypass","Privilege Escalation","kind-calico-cluster","Calico (iptables)","phase3","ERROR","hostNetwork pod failed to start (status: ContainerCreating) — may require privileged admission or node has restrictions","20260420_181130"
+"T1046","DNS Discovery Post-Deny (DNS also blocked)","Discovery","kind-calico-cluster","Calico (iptables)","phase3","BLOCKED","DNS resolution also failed — default-deny blocking UDP 53. WARNING: this breaks cluster DNS for legitimate traffic too. Add explicit DNS allow rule to policy","20260420_181130"

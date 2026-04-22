@@ -1,0 +1,223 @@
+============================================================
+ CNI BYPASS TEST SUITE — 24 BYPASS TECHNIQUES
+ Student: Sagarkumar Bhaveshbhai Bhikadiya | ID: 24051080
+ Cluster: kind-calico-cluster
+ CNI    : Calico (iptables)
+ Time   : Wed Apr 22 12:41:20 PM BST 2026
+============================================================
+
+[PREFLIGHT] Verifying cluster is reachable...
+[OK] Cluster reachable.
+[PREFLIGHT] NetworkPolicy count: 1
+[OK] redis-cart=10.96.66.111 | frontend=10.96.17.254 | kube-dns=10.96.0.10 | node=172.18.0.5
+[SETUP] Deploying fresh attacker pod...
+[OK] Attacker pod: Unknown
+
+
+Starting bypass tests...
+
+============================================================
+ CATEGORY 1: Network Namespace Bypasses
+============================================================
+
+--- B01 | T1611 | hostNetwork Pod Bypass ---
+    Deploying hostNetwork:true pod to bypass pod-namespace NetworkPolicy...
+  [ERROR]  
+  B01 | T1611 | hostNetwork Pod NetworkPolicy Bypass
+  Category: Network Namespace
+  Detail: hostNetwork pod failed to start (status: pod/bypass-hostnet created
+Running) — image pull blocked by egress policy or admission control
+
+--- B02 | T1057 | hostPID Namespace Process Visibility ---
+  [ERROR]  
+  B02 | T1057 | hostPID Namespace Process Visibility
+  Category: Network Namespace
+  Detail: hostPID pod failed to start (status: pod/bypass-hostpid created
+Running)
+
+--- B03 | T1611 | hostIPC Namespace Shared Memory Access ---
+  [ERROR]  
+  B03 | T1611 | hostIPC Namespace Shared Memory Access
+  Category: Network Namespace
+  Detail: hostIPC pod failed to start (status: pod/bypass-hostipc created
+Running)
+
+--- B04 | T1611 | Privileged Container Capability Bypass ---
+  [ERROR]  
+  B04 | T1611 | Privileged Container Capability Bypass
+  Category: Network Namespace
+  Detail: Privileged pod failed to start (status: pod/bypass-privileged created
+Running)
+
+============================================================
+ CATEGORY 2: Protocol and Port Bypasses
+============================================================
+
+--- B05 | T1599 | IPv6 Dual-Stack Enforcement Gap ---
+  [ERROR]  
+  B05 | T1599 | IPv6 Dual-Stack Enforcement Gap
+  Category: Protocol Bypass
+  Detail: No IPv6 pod IPs found — IPv6 not enabled in KIND config. Enable with ipv6Subnet in KIND config
+
+--- B06 | T1048 | UDP Protocol Bypass ---
+  [ALLOWED] *** BYPASS CONFIRMED ***
+  B06 | T1048 | UDP Protocol Bypass
+  Category: Protocol Bypass
+  Detail: 6 UDP ports reachable externally — default-deny may not fully cover UDP traffic
+
+--- B07 | T1571 | SCTP Protocol Bypass ---
+  [BLOCKED]
+  B07 | T1571 | SCTP Protocol Bypass
+  Category: Protocol Bypass
+  Detail: SCTP unavailable or blocked — kernel module not loaded or CNI filtering SCTP
+
+--- B08 | T1571 | Non-Standard Port Range Bypass ---
+  [BLOCKED]
+  B08 | T1571 | Non-Standard Port Range Bypass
+  Category: Protocol Bypass
+  Detail: All non-standard ports blocked — default-deny covering all unlisted ports correctly
+
+--- B09 | T1018 | ICMP Protocol Bypass (Ping) ---
+  [BLOCKED]
+  B09 | T1018 | ICMP Protocol Bypass (Ping Sweep)
+  Category: Protocol Bypass
+  Detail: All ICMP blocked — CNI filtering ICMP traffic or no hosts responding
+
+============================================================
+ CATEGORY 3: Service and Routing Bypasses
+============================================================
+
+--- B10 | T1021 | NodePort Service Bypass ---
+  [BLOCKED]
+  B10 | T1021 | NodePort Service Bypass
+  Category: Service Bypass
+  Detail: NodePort 32093 unreachable from attacker pod — CNI blocking even NodePort-routed traffic
+
+--- B11 | T1021 | Direct Pod IP Bypass (bypassing ClusterIP) ---
+  [BLOCKED]
+  B11 | T1021 | Direct Pod IP Bypass (ClusterIP bypass)
+  Category: Service Bypass
+  Detail: Direct pod IP connection blocked — NetworkPolicy correctly applied to pod IP, not just ClusterIP
+
+--- B12 | T1046 | DNS Service Enumeration Post-Default-Deny ---
+  [BLOCKED]
+  B12 | T1046 | DNS Service Enumeration Post-Default-Deny
+  Category: Service Bypass
+  Detail: DNS resolution failed — default-deny blocking UDP 53 to kube-dns. WARNING: this breaks legitimate cluster DNS too
+
+--- B13 | T1530 | Link-Local Metadata Endpoint Bypass ---
+  [BLOCKED]
+  B13 | T1530 | Link-Local Metadata Endpoint Bypass
+  Category: Service Bypass
+  Detail: 169.254.169.254 unreachable — egress policy blocking link-local range or no metadata service present
+
+============================================================
+ CATEGORY 4: Kernel and Capability Bypasses
+============================================================
+
+--- B14 | T1040 | Raw Socket Bypass (AF_PACKET) ---
+  [ALLOWED] *** BYPASS CONFIRMED ***
+  B14 | T1040 | Raw Socket Bypass (AF_PACKET)
+  Category: Kernel Bypass
+  Detail: AF_PACKET raw socket opened successfully — attacker can craft arbitrary L2 frames bypassing netfilter/iptables. NetworkPolicy operates at L3+; raw L2 packets bypass it entirely
+
+--- B15 | T1562.001 | iptables Direct Manipulation (CNI Rule Removal) ---
+  [ALLOWED] *** BYPASS CONFIRMED ***
+  B15 | T1562.001 | iptables Direct Rule Manipulation
+  Category: Kernel Bypass
+  Detail: iptables FORWARD chain flushed — 0
+0 CNI rules removed. For Calico: this removes NetworkPolicy enforcement entirely. For Cilium: eBPF enforcement persists as iptables is not Cilium's enforcement mechanism
+
+--- B16 | T1611 | /proc Network Namespace Pivot ---
+  [BLOCKED]
+  B16 | T1611 | /proc Network Namespace Pivot
+  Category: Kernel Bypass
+  Detail: /proc network files empty or unreadable
+
+--- B17 | T1571 | Loopback Interface Bypass ---
+  [BLOCKED]
+  B17 | T1571 | Loopback Interface Bypass
+  Category: Kernel Bypass
+  Detail: No services on loopback — loopback bypass not applicable to this pod (0 non-loopback listeners)
+
+============================================================
+ CATEGORY 5: CNI-Specific Implementation Bypasses
+============================================================
+
+--- B18 | T1562 | Policy Propagation Race Condition ---
+  [ALLOWED] *** BYPASS CONFIRMED ***
+  B18 | T1562 | Policy Propagation Race Condition
+  Category: CNI-Specific
+  Detail: Connection succeeded during 1-second policy deletion window — enforcement gap exists during policy changes. Time-of-check to time-of-enforcement gap exploitable
+
+--- B19 | T1078 | Cross-Namespace Traffic Bypass ---
+  [ALLOWED] *** BYPASS CONFIRMED ***
+  B19 | T1078 | Cross-Namespace Traffic Bypass
+  Category: CNI-Specific
+  Detail: UDP to kube-dns (10.96.0.10:53) succeeded — egress default-deny blocks cross-namespace traffic but DNS UDP may be implicitly permitted
+
+--- B20 | T1021 | Headless Service Direct Pod IP Access ---
+  [BLOCKED]
+  B20 | T1021 | Headless Service Direct Pod IP Access
+  Category: CNI-Specific
+  Detail: DNS resolution failed for headless service — DNS egress blocked by default-deny
+
+============================================================
+ CATEGORY 6: Application Layer Bypasses
+============================================================
+
+--- B21 | T1090 | HTTP CONNECT Proxy Tunnel Bypass ---
+  [BLOCKED]
+  B21 | T1090 | HTTP CONNECT Proxy Tunnel Bypass
+  Category: Application Layer
+  Detail: HTTP CONNECT not accepted (000000) — no open proxy available or frontend blocked by NetworkPolicy
+
+--- B22 | T1071.004 | DNS Tunneling Covert C2 Channel ---
+  [ALLOWED] *** BYPASS CONFIRMED ***
+  B22 | T1071.004 | DNS Tunneling Covert C2 Channel
+  Category: Application Layer
+  Detail: External DNS reachable — A record: ;; communications er, TXT: ;; communications error to 8.8. Full DNS tunneling C2 channel viable. NetworkPolicy cannot inspect DNS content; only Cilium L7 DNS policy with allowed domains list can prevent arbitrary DNS queries
+
+--- B23 | T1071.001 | WebSocket Protocol Upgrade Bypass ---
+  [BLOCKED]
+  B23 | T1071.001 | WebSocket Protocol Upgrade Bypass
+  Category: Application Layer
+  Detail: Frontend unreachable — NetworkPolicy blocking TCP:80, WebSocket bypass not possible
+
+--- B24 | T1046 | gRPC Reflection Service Discovery ---
+  [BLOCKED]
+  B24 | T1046 | gRPC Reflection Service Discovery
+  Category: Application Layer
+  Detail: All gRPC ports unreachable — NetworkPolicy blocking TCP to gRPC services
+
+
+============================================================
+ BYPASS TEST SUITE — COMPLETE RESULTS
+============================================================
+ Cluster  : kind-calico-cluster
+ CNI      : Calico (iptables)
+ Date     : Wed Apr 22 12:47:29 PM BST 2026
+------------------------------------------------------------
+ Total Bypass Tests : 24
+ BYPASSES CONFIRMED : 6  ← Each is a dissertation finding
+ BLOCKED            : 13
+ ERRORS             : 5
+
+ CNI Bypass Rate    : 25.0%  (lower = stronger enforcement)
+ CNI Block Rate     : 54.2%  (higher = stronger enforcement)
+------------------------------------------------------------
+ Category Breakdown:
+   Cat 1 - Network Namespace Bypasses  : B01-B04
+   Cat 2 - Protocol and Port Bypasses  : B05-B09
+   Cat 3 - Service and Routing Bypasses: B10-B13
+   Cat 4 - Kernel and Capability       : B14-B17
+   Cat 5 - CNI-Specific                : B18-B20
+   Cat 6 - Application Layer           : B21-B24
+------------------------------------------------------------
+ Report : ./bypass-results/kind-calico-cluster-bypass-20260422_124120.txt
+ CSV    : ./bypass-results/kind-calico-cluster-bypass-20260422_124120.csv
+============================================================
+
+Done.
+  Report : ./bypass-results/kind-calico-cluster-bypass-20260422_124120.txt
+  CSV    : ./bypass-results/kind-calico-cluster-bypass-20260422_124120.csv

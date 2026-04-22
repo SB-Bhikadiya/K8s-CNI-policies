@@ -1,0 +1,156 @@
+============================================================
+ DISSERTATION ATTACK TEST SUITE — 25 TECHNIQUES
+ Student: Sagarkumar Bhaveshbhai Bhikadiya | ID: 24051080
+ Cluster: kind-cilium-cluster
+ CNI    : Cilium (eBPF)
+ Phase  : phase2
+ Time   : Mon Apr 20 05:41:46 PM BST 2026
+============================================================
+[OK] Cluster kind-cilium-cluster is reachable.
+
+[OK] Service IPs resolved.
+     frontend=10.96.96.125 | redis-cart=10.96.96.190 | API=10.96.0.1
+
+
+[SETUP] Checking attacker pod...
+[SETUP] Attacker pod already running. Reusing.
+
+============================================================
+ PHASE 2: POLICY ENFORCEMENT TESTING (Default-Deny Applied)
+ Tests 1-25 | Expected: Network attacks = BLOCKED
+ ALLOWED result = enforcement gap = dissertation finding
+ NOTE: T1040/T1049/T1083 will remain ALLOWED — filesystem reads
+       are outside CNI scope. Document this as expected behaviour.
+============================================================
+
+[VERIFY] NetworkPolicy count: 1 (should be > 0)
+
+--- T1190 | Initial Access: Exploit Public-Facing Application ---
+  [BLOCKED] T1190 | Exploit Public-Facing Application
+           Detail: HTTP 000000 — frontend unreachable from attacker pod
+
+--- T1613 | Discovery: Container and Resource Discovery ---
+  [BLOCKED] T1613 | Container and Resource Discovery
+           Detail: API server returned no pod list — RBAC or NetworkPolicy blocking
+
+--- T1046 | Discovery: Network Service Scanning ---
+  [BLOCKED] T1046 | Network Service Scanning
+           Detail: 0/11 ports reachable — default-deny blocking all service discovery
+
+--- T1210 | Lateral Movement: Redis Unauthenticated Access ---
+  [BLOCKED] T1210 | Exploitation of Remote Services (Redis)
+           Detail: redis-cart:6379 unreachable — NetworkPolicy protecting database
+
+--- T1021.004 | Lateral Movement: Remote Services (all 11 pods) ---
+  [BLOCKED] T1021.004 | Remote Services — Lateral Movement
+           Detail: 0/11 lateral paths — full east-west isolation achieved by CNI
+
+--- T1552.007 | Credential Access: Container API Credentials (SA Token) ---
+  [ALLOWED] T1552.007 | Container API Credentials (SA Token Read)
+           Detail: SA token readable at /var/run/secrets/kubernetes.io/serviceaccount/token — token prefix: eyJhbGciOiJSUzI1NiIsImtpZCI6IlMzNXM1RXc3...
+
+--- T1552.007b | Credential Access: API Server Secrets via Token ---
+  [BLOCKED] T1552.007 | API Server Secrets via Service Account Token
+           Detail: Secrets endpoint denied — RBAC or NetworkPolicy blocking API server access
+
+--- T1552.004 | Credential Access: Credentials in Environment Variables ---
+  [ALLOWED] T1552.004 | Credentials in Environment Variables
+           Detail: 89 service connection strings exposed as env vars — all ClusterIPs/ports visible
+
+--- T1005 | Collection: Data from Redis (live cart sessions) ---
+  [BLOCKED] T1005 | Data from Local System (Redis Session Dump)
+           Detail: Redis unreachable — cannot collect session data
+
+--- T1609 | Execution: Container Administration Command (kubectl exec) ---
+  [BLOCKED] T1609 | Container Administration Command
+           Detail: API server denied pod list — exec path unavailable
+
+--- T1611 | Privilege Escalation: Escape to Host ---
+  [ALLOWED] T1611 | Escape to Host (Host Filesystem Access)
+           Detail: Host /etc/ visible via /proc/1/root — container has elevated host access: alpine-release apk bash 
+
+--- T1562.001 | Defense Evasion: Read/Modify iptables Rules ---
+  [ALLOWED] T1562.001 | Disable or Modify Tools (iptables)
+           Detail: iptables rules visible from inside pod (0
+0 rules) — CNI enforcement rules exposed to attacker
+
+--- T1048 | Exfiltration: Exfiltration Over Alternative Protocol ---
+  [BLOCKED] T1048 | Exfiltration Over Alternative Protocol (DNS)
+           Detail: External DNS and port 53 blocked — egress filtering active
+
+--- T1489 | Impact: Service Stop (pod deletion via API) ---
+  [BLOCKED] T1489 | Service Stop (Pod Deletion via API)
+           Detail: Deletion denied — RBAC preventing destructive operations
+
+--- T1499 | Impact: Endpoint Denial of Service ---
+  [BLOCKED] T1499 | Endpoint Denial of Service
+           Detail: 0/10 requests reached target — rate limiting or NetworkPolicy active
+
+--- T1610 | Execution: Deploy Container via Kubernetes API ---
+  [BLOCKED] T1610 | Deploy Container via API
+           Detail: Pod creation denied — RBAC preventing workload deployment
+
+--- T1059.013 | Execution: Container CLI/API (kubectl inside pod) ---
+  [BLOCKED] T1059.013 | Container CLI/API (kubectl inside pod)
+           Detail: kubectl failed — API server unreachable or RBAC denied
+
+--- T1040 | Credential Access: Network Sniffing (tcpdump) ---
+  [ALLOWED] T1040 | Network Sniffing (tcpdump)
+           Detail: tcpdump captured live packets on eth0 — 0 packets visible. NOTE: NetworkPolicy cannot prevent sniffing; only encryption (mTLS) mitigates this
+
+--- T1018 | Discovery: Remote System Discovery (ICMP sweep) ---
+  [BLOCKED] T1018 | Remote System Discovery (ICMP Ping Sweep)
+           Detail: 0/10 ICMP pings responded — CNI blocking ICMP or no hosts in range
+
+--- T1049 | Discovery: System Network Connections Discovery ---
+  [BLOCKED] T1049 | System Network Connections Discovery (/proc/net/tcp)
+           Detail: /proc/net/tcp not readable or empty — procfs restricted
+
+--- T1083 | Discovery: File and Directory Discovery (secrets/configmaps) ---
+  [ALLOWED] T1083 | File and Directory Discovery (Secrets/Mounts)
+           Detail: 327 files found in secret paths, 1 secret mounts — CA cert, SA token, namespace all readable. NOTE: Filesystem; NetworkPolicy cannot block
+
+--- T1557.002 | Credential Access: ARP Cache Poisoning ---
+  [ALLOWED] T1557.002 | ARP Cache Poisoning (L2 ARP Spoofing)
+           Detail: ARP replies received from 10.96.96.125 — L2 adjacency confirmed. ARP table shows 1 entries. Gratuitous ARP possible: NetworkPolicy does not operate at L2
+
+--- T1530 | Collection: Data from Cloud Storage (metadata endpoint) ---
+  [BLOCKED] T1530 | Data from Cloud Storage (Metadata Endpoint)
+           Detail: 169.254.169.254 unreachable — metadata endpoint not accessible (expected in KIND/bare-metal)
+
+--- T1078 | Persistence: Valid Accounts (cross-namespace API access) ---
+  [BLOCKED] T1078 | Valid Accounts — Cross-Namespace API Access
+           Detail: API server unreachable for cross-namespace query — NetworkPolicy blocking API access
+
+--- T1071.004 | Command and Control: DNS as Application Layer Protocol ---
+  [ALLOWED] T1071.004 | DNS as Application Layer Protocol (TXT/C2)
+           Detail: External TXT query reached 8.8.8.8 — DNS tunneling C2 channel viable. TXT response: ;; communications error to 8.8.8.8#53: timed out. Egress DNS not restricted by query type
+
+
+============================================================
+ RESULTS SUMMARY
+============================================================
+ Cluster  : kind-cilium-cluster
+ CNI      : Cilium (eBPF)
+ Phase    : phase2
+ Date     : Mon Apr 20 05:46:37 PM BST 2026
+------------------------------------------------------------
+ Total Tests  : 25
+ ALLOWED      : 8
+ BLOCKED      : 17
+ ERRORS       : 0
+
+ Enforcement Rate    : 68.0%
+ [WARNING]  Below 80% — significant enforcement gaps remain
+
+ NOTE: T1040/T1049/T1083 are filesystem reads — CNI cannot block
+ these by design. Exclude from enforcement rate calculation or
+ document as 'outside CNI scope' in your dissertation.
+------------------------------------------------------------
+ Report : ./results/kind-cilium-cluster-phase2-20260420_174146.txt
+ CSV    : ./results/kind-cilium-cluster-phase2-20260420_174146.csv
+============================================================
+
+Done.
+  Report : ./results/kind-cilium-cluster-phase2-20260420_174146.txt
+  CSV    : ./results/kind-cilium-cluster-phase2-20260420_174146.csv
