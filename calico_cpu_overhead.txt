@@ -1,0 +1,60 @@
+=== Sample 1 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+calico-cluster-control-plane   112m         0%       812Mi           10%         
+calico-cluster-worker          112m         0%       1059Mi          13%         
+calico-cluster-worker2         80m          0%       891Mi           11%         
+=== Sample 2 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+calico-cluster-control-plane   112m         0%       812Mi           10%         
+calico-cluster-worker          112m         0%       1059Mi          13%         
+calico-cluster-worker2         80m          0%       891Mi           11%         
+=== Sample 3 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+calico-cluster-control-plane   119m         0%       825Mi           10%         
+calico-cluster-worker          529m         2%       1023Mi          13%         
+calico-cluster-worker2         433m         1%       879Mi           11%         
+=== Sample 4 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+calico-cluster-control-plane   119m         0%       825Mi           10%         
+calico-cluster-worker          529m         2%       1023Mi          13%         
+calico-cluster-worker2         433m         1%       879Mi           11%         
+=== Sample 5 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+calico-cluster-control-plane   119m         0%       825Mi           10%         
+calico-cluster-worker          529m         2%       1023Mi          13%         
+calico-cluster-worker2         433m         1%       879Mi           11%         
+=== Sample 6 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+calico-cluster-control-plane   130m         0%       836Mi           10%         
+calico-cluster-worker          1123m        5%       1052Mi          13%         
+calico-cluster-worker2         842m         3%       898Mi           11%         
+=== Sample 7 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+calico-cluster-control-plane   130m         0%       836Mi           10%         
+calico-cluster-worker          1123m        5%       1052Mi          13%         
+calico-cluster-worker2         842m         3%       898Mi           11%         
+=== Sample 8 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+calico-cluster-control-plane   130m         0%       836Mi           10%         
+calico-cluster-worker          1123m        5%       1052Mi          13%         
+calico-cluster-worker2         842m         3%       898Mi           11%         
+=== Sample 9 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+calico-cluster-control-plane   141m         0%       828Mi           10%         
+calico-cluster-worker          1112m        5%       1047Mi          13%         
+calico-cluster-worker2         875m         3%       894Mi           11%         
+=== Sample 10 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+calico-cluster-control-plane   141m         0%       828Mi           10%         
+calico-cluster-worker          1112m        5%       1047Mi          13%         
+calico-cluster-worker2         875m         3%       894Mi           11%         
+=== Sample 11 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+calico-cluster-control-plane   141m         0%       828Mi           10%         
+calico-cluster-worker          1112m        5%       1047Mi          13%         
+calico-cluster-worker2         875m         3%       894Mi           11%         
+=== Sample 12 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+calico-cluster-control-plane   122m         0%       815Mi           10%         
+calico-cluster-worker          1125m        5%       1078Mi          14%         
+calico-cluster-worker2         775m         3%       864Mi           11%         

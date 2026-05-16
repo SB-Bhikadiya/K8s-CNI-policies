@@ -1,0 +1,60 @@
+=== Sample 1 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cilium-cluster-control-plane   106m         0%       793Mi           10%         
+cilium-cluster-worker          115m         0%       1066Mi          14%         
+cilium-cluster-worker2         119m         0%       921Mi           12%         
+=== Sample 2 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cilium-cluster-control-plane   106m         0%       793Mi           10%         
+cilium-cluster-worker          115m         0%       1066Mi          14%         
+cilium-cluster-worker2         119m         0%       921Mi           12%         
+=== Sample 3 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cilium-cluster-control-plane   119m         0%       781Mi           10%         
+cilium-cluster-worker          390m         1%       1103Mi          14%         
+cilium-cluster-worker2         274m         1%       951Mi           12%         
+=== Sample 4 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cilium-cluster-control-plane   119m         0%       781Mi           10%         
+cilium-cluster-worker          390m         1%       1103Mi          14%         
+cilium-cluster-worker2         274m         1%       951Mi           12%         
+=== Sample 5 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cilium-cluster-control-plane   119m         0%       781Mi           10%         
+cilium-cluster-worker          390m         1%       1103Mi          14%         
+cilium-cluster-worker2         274m         1%       951Mi           12%         
+=== Sample 6 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cilium-cluster-control-plane   134m         0%       780Mi           10%         
+cilium-cluster-worker          1151m        5%       1108Mi          14%         
+cilium-cluster-worker2         815m         3%       945Mi           12%         
+=== Sample 7 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cilium-cluster-control-plane   134m         0%       780Mi           10%         
+cilium-cluster-worker          1151m        5%       1108Mi          14%         
+cilium-cluster-worker2         815m         3%       945Mi           12%         
+=== Sample 8 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cilium-cluster-control-plane   134m         0%       780Mi           10%         
+cilium-cluster-worker          1151m        5%       1108Mi          14%         
+cilium-cluster-worker2         815m         3%       945Mi           12%         
+=== Sample 9 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cilium-cluster-control-plane   125m         0%       776Mi           10%         
+cilium-cluster-worker          1115m        5%       1112Mi          14%         
+cilium-cluster-worker2         968m         4%       923Mi           12%         
+=== Sample 10 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cilium-cluster-control-plane   125m         0%       776Mi           10%         
+cilium-cluster-worker          1115m        5%       1112Mi          14%         
+cilium-cluster-worker2         968m         4%       923Mi           12%         
+=== Sample 11 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cilium-cluster-control-plane   125m         0%       776Mi           10%         
+cilium-cluster-worker          1115m        5%       1112Mi          14%         
+cilium-cluster-worker2         968m         4%       923Mi           12%         
+=== Sample 12 ===
+NAME                           CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+cilium-cluster-control-plane   132m         0%       777Mi           10%         
+cilium-cluster-worker          1112m        5%       1102Mi          14%         
+cilium-cluster-worker2         1169m        5%       949Mi           12%         

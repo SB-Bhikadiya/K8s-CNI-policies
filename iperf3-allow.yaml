@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-iperf3
+  namespace: boutique
+spec:
+  podSelector:
+    matchLabels:
+      app: iperf3-server
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          run: iperf3-client
+    ports:
+    - protocol: TCP
+      port: 5201

@@ -1,0 +1,84 @@
+============================================================
+ DISSERTATION ATTACK TEST SUITE — 25 TECHNIQUES
+ Student: Sagarkumar Bhaveshbhai Bhikadiya | ID: 24051080
+ Cluster: kind-cilium-cluster
+ CNI    : Cilium (eBPF)
+ Phase  : phase3
+ Time   : Mon Apr 20 06:13:19 PM BST 2026
+============================================================
+[OK] Cluster kind-cilium-cluster is reachable.
+
+[OK] Service IPs resolved.
+     frontend=10.96.96.125 | redis-cart=10.96.96.190 | API=10.96.0.1
+
+
+[SETUP] Checking attacker pod...
+[SETUP] Attacker pod already running. Reusing.
+
+============================================================
+ PHASE 3: CNI BYPASS ATTEMPTS (4 techniques)
+ ALLOWED result here = significant dissertation finding
+ These tests expose architectural differences between CNIs
+============================================================
+
+[VERIFY] NetworkPolicy count: 1 (must be > 0 for bypass tests to be meaningful)
+
+--- BYPASS-1 | T1599 | IPv6 Enforcement Gap ---
+    Calico: iptables rules apply to IPv4 only by default
+    Cilium: eBPF enforces both IPv4 and IPv6 natively
+  [ERROR]   T1599 | IPv6 Enforcement Gap Bypass
+           Detail: No IPv6 pod IPs on this cluster — IPv6 not enabled in KIND config
+
+
+--- BYPASS-2 | T1571 | Non-Standard Port Bypass ---
+    NetworkPolicies specify exact ports. Any unlisted port may be open.
+    Calico: iptables only blocks declared ports
+    Cilium: same — but eBPF handles this more efficiently
+  [BLOCKED] T1571 | Non-Standard Port Bypass
+           Detail: All non-standard ports blocked — default-deny correctly covers all unlisted ports
+
+
+--- BYPASS-3 | T1611 | hostNetwork Pod Bypass ---
+    hostNetwork:true uses the node's network namespace
+    NetworkPolicy applies to pod namespaces — not the host namespace
+    This is a documented architectural limitation of Kubernetes NetworkPolicy
+  [BLOCKED] T1611 | hostNetwork Pod NetworkPolicy Bypass
+           Detail: hostNetwork pod also blocked from redis-cart — CNI enforcing node-level restrictions beyond NetworkPolicy spec
+
+
+--- BYPASS-4 | T1046 | DNS Service Discovery Post-Default-Deny ---
+    Default-deny must explicitly allow UDP 53 to kube-dns or DNS breaks
+    If DNS is allowed: attacker can still enumerate all service names/IPs
+    If DNS is blocked: cluster loses all service discovery (broken cluster)
+    Correct result: DNS ALLOWED (in policy), direct TCP BLOCKED
+  [BLOCKED] T1046 | DNS Discovery Post-Deny (DNS also blocked)
+           Detail: DNS resolution also failed — default-deny blocking UDP 53. WARNING: this breaks cluster DNS for legitimate traffic too. Add explicit DNS allow rule to policy
+
+
+============================================================
+ RESULTS SUMMARY
+============================================================
+ Cluster  : kind-cilium-cluster
+ CNI      : Cilium (eBPF)
+ Phase    : phase3
+ Date     : Mon Apr 20 06:15:06 PM BST 2026
+------------------------------------------------------------
+ Total Tests  : 4
+ ALLOWED      : 0
+ BLOCKED      : 3
+ ERRORS       : 1
+
+ Enforcement Rate    : 75.0%
+ [WARNING]  Below 80% — significant enforcement gaps remain
+
+ NOTE: T1040/T1049/T1083 are filesystem reads — CNI cannot block
+ these by design. Exclude from enforcement rate calculation or
+ document as 'outside CNI scope' in your dissertation.
+------------------------------------------------------------
+ Report : ./results/kind-cilium-cluster-phase3-20260420_181319.txt
+ CSV    : ./results/kind-cilium-cluster-phase3-20260420_181319.csv
+============================================================
+
+Done.
+  Report : ./results/kind-cilium-cluster-phase3-20260420_181319.txt
+  CSV    : ./results/kind-cilium-cluster-phase3-20260420_181319.csv
