@@ -1,1013 +1,571 @@
-# Security Challenges in Container Orchestration
-### Kubernetes Vulnerabilities, Network Policies, and Threat Mitigation Strategies
+# K8s-CNI-policies
 
-![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.31.0-326CE5?logo=kubernetes&logoColor=white)
-![Calico](https://img.shields.io/badge/CNI-Calico_v3.27-FB8C00?logo=linux&logoColor=white)
-![Cilium](https://img.shields.io/badge/CNI-Cilium_v1.15-F8C517?logo=linux&logoColor=white)
-![MITRE ATT&CK](https://img.shields.io/badge/MITRE-ATT%26CK_for_Containers-red)
-![Platform](https://img.shields.io/badge/Platform-Ubuntu_24.04-E95420?logo=ubuntu&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
+**Dissertation Research Repository**  
+*Empirical Comparison of Calico and Cilium CNI Plugins in Kubernetes: Enforcement Resilience, Observability, and Architectural Divergence*
 
-**Author:** Sagarkumar Bhaveshbhai Bhikadiya | **Student ID:** 24051080 | **Module:** CT7P01 MSc Project
+**Author:** Sagarkumar B Bhikadiya  
+**Student ID:** 24051080  
+**Module:** CT7P01 — MSc Computer Networks and Cyber Security  
+**Institution:** London Metropolitan University  
+**Supervisor:** Astrit Krasniqi  
 
----
+<div align="center">
 
-## Table of Contents
+![GitHub repo size](https://img.shields.io/github/repo-size/SB-Bhikadiya/K8s-CNI-policies?style=flat-square)
+![GitHub last commit](https://img.shields.io/github/last-commit/SB-Bhikadiya/K8s-CNI-policies?style=flat-square)
+![License](https://img.shields.io/badge/license-Academic_Use_Only-red?style=flat-square)
+![Test Executions](https://img.shields.io/badge/test_executions-74-blue?style=flat-square)
+![MITRE Techniques](https://img.shields.io/badge/MITRE_techniques-25-orange?style=flat-square)
+![Bypass Tests](https://img.shields.io/badge/bypass_tests-24-purple?style=flat-square)
 
-1. [Project Overview](#1-project-overview)
-2. [Repository Structure](#2-repository-structure)
-3. [System Requirements](#3-system-requirements)
-4. [Step 1 — Install Required Tools](#4-step-1--install-required-tools)
-5. [Step 2 — Fix Kernel inotify Limits](#5-step-2--fix-kernel-inotify-limits)
-6. [Step 3 — Create KIND Cluster Configuration](#6-step-3--create-kind-cluster-configuration)
-7. [Step 4 — Build the Calico Cluster](#7-step-4--build-the-calico-cluster)
-8. [Step 5 — Build the Cilium Cluster](#8-step-5--build-the-cilium-cluster)
-9. [Step 6 — Verify Both Clusters Are Identical](#9-step-6--verify-both-clusters-are-identical)
-10. [Step 7 — Deploy Google Microservices Demo](#10-step-7--deploy-google-microservices-demo)
-11. [Step 8 — Access the Application](#11-step-8--access-the-application)
-12. [Step 9 — Prepare the Attack Environment](#12-step-9--prepare-the-attack-environment)
-13. [Step 10 — Phase 1: Baseline Attack Testing](#13-step-10--phase-1-baseline-attack-testing)
-14. [Step 11 — Phase 2: Policy Enforcement Testing](#14-step-11--phase-2-policy-enforcement-testing)
-15. [Step 12 — Phase 3: CNI Bypass Testing](#15-step-12--phase-3-cni-bypass-testing)
-16. [Step 13 — Extended Bypass Test Suite](#16-step-13--extended-bypass-test-suite)
-17. [Step 14 — B01 hostNetwork Manual Test](#17-step-14--b01-hostnetwork-manual-test)
-18. [Step 15 — Remove Policies and Restore Clusters](#18-step-15--remove-policies-and-restore-clusters)
-19. [Step 16 — Cluster Persistence and Safe Shutdown](#19-step-16--cluster-persistence-and-safe-shutdown)
-20. [Known Errors and Fixes](#20-known-errors-and-fixes)
+</div>
 
 ---
 
-## 1. Project Overview
+## Technology Stack
 
-This repository is the complete reproducible research environment for an empirical comparison of two Kubernetes Container Network Interface (CNI) plugins under structured attack conditions mapped to the MITRE ATT&CK for Containers framework.
+<div align="center">
 
-**What is being compared:**
+### Core Platform
+![Kubernetes](https://img.shields.io/badge/Kubernetes-v1.31.0-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-v29.4.0-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Ubuntu](https://img.shields.io/badge/Ubuntu-Linux-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)
+![Kernel](https://img.shields.io/badge/Kernel-6.17.0--22-FCC624?style=for-the-badge&logo=linux&logoColor=black)
 
-| CNI | Enforcement Mechanism | Observability Tool |
-|-----|-----------------------|--------------------|
-| Calico | Linux `iptables` — writes packet filter rules into host netfilter chains | Calico flow logs |
-| Cilium | `eBPF` — attaches programs directly to kernel network interfaces | Hubble — identity-aware real-time flow visibility |
+### CNI Plugins Under Test
+![Calico](https://img.shields.io/badge/Calico-v3.28.0_iptables_mode-FC6A1B?style=for-the-badge&logoColor=white)
+![Cilium](https://img.shields.io/badge/Cilium-eBPF_%2B_Hubble_enabled-F8C517?style=for-the-badge&logoColor=black)
 
-**What is being measured:**
+### Tooling
+![KIND](https://img.shields.io/badge/KIND-v0.24.0-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
+![kubectl](https://img.shields.io/badge/kubectl-v1.35.2-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
+![Helm](https://img.shields.io/badge/Helm-v3.x-0F1689?style=for-the-badge&logo=helm&logoColor=white)
+![Cilium CLI](https://img.shields.io/badge/Cilium_CLI-v0.19.2-F8C517?style=for-the-badge&logoColor=black)
 
-- Security enforcement effectiveness against 25 MITRE ATT&CK for Containers techniques across three phases
-- CNI enforcement gaps across 24 bypass techniques in 6 categories
-- Which attack techniques fall outside CNI enforcement scope entirely
+### Threat Framework and Target Workload
+![MITRE](https://img.shields.io/badge/MITRE_ATT%26CK-Containers_v18.1-E31B23?style=for-the-badge&logoColor=white)
+![Boutique](https://img.shields.io/badge/Google_Microservices_Demo-Online_Boutique-4285F4?style=for-the-badge&logo=google&logoColor=white)
 
-**Target workload:** Google Microservices Demo (Online Boutique) — 11 polyglot microservices communicating over gRPC and HTTP, providing realistic east-west pod-to-pod traffic across multiple service boundaries.
+### Scripting and Output
+![Bash](https://img.shields.io/badge/Bash-Attack_%26_Bypass_Scripts-4EAA25?style=for-the-badge&logo=gnubash&logoColor=white)
+![CSV](https://img.shields.io/badge/Output-CSV_%2B_TXT_Reports-217346?style=for-the-badge&logo=microsoftexcel&logoColor=white)
 
-**Test methodology:**
-
-```
-Phase 1 ── Zero NetworkPolicies — 25 techniques run at baseline
-           Expected: all network attacks ALLOWED
-
-Phase 2 ── Default-deny applied — same 25 techniques re-run
-           Expected: network attacks BLOCKED
-
-Phase 3 ── 4 bypass techniques against active default-deny
-           Tests: enforcement gaps specific to each CNI architecture
-
-Bypass  ── 24 extended bypass techniques across 6 categories
-           Tests: architectural enforcement limits of each CNI
-```
+</div>
 
 ---
 
-## 2. Repository Structure
+## What This Repository Contains
+
+This repository holds every file needed to reproduce the dissertation research from scratch on a clean Ubuntu machine. It contains:
+
+- KIND cluster configuration files for both test clusters
+- CNI installation manifests and scripts for Calico and Cilium
+- Default-deny NetworkPolicy manifest
+- The full attack test suite and bypass test suite scripts
+- Raw result files from all three test phases
+- Performance benchmark data
+- Observability capture data
+- Data corrections documentation
+
+**The dissertation document itself is submitted separately through the university portal.**
+
+---
+
+## Research Overview
+
+This research empirically compared two production Kubernetes CNI plugins — **Calico** (iptables-based enforcement) and **Cilium** (eBPF-based enforcement with Hubble observability) — across three dimensions:
+
+- **Enforcement effectiveness** against 25 MITRE ATT&CK for Containers techniques
+- **Observability quality** for attack detection and incident response
+- **Performance overhead** under identical workload conditions
+
+Testing used two identical KIND clusters running Kubernetes v1.31.0 with the Google Online Boutique microservices application as the target workload. The CNI plugin was the sole independent variable.
+
+---
+
+## System Requirements
+
+| Component | Minimum | Tested Value |
+|---|---|---|
+| Operating System | Ubuntu 22.04 LTS or later | Ubuntu Linux |
+| Kernel | 5.15+ (eBPF support required) | 6.17.0-22-generic |
+| RAM | 16 GB | 30 GB |
+| Storage | 60 GB free | 492 GB NVMe SSD |
+| CPU | 4 cores x86-64 | Multicore x86-64 |
+| Internet | Required for image pulls | Required |
+
+> Both clusters run simultaneously on the same host. Each cluster consumes approximately 6–8 GB RAM. Running below 16 GB will cause pods to be evicted or fail to schedule.
+
+---
+
+## Software Versions
+
+| Tool | Version |
+|---|---|
+| Docker | 29.4.0 |
+| KIND | 0.24.0 |
+| kubectl | v1.35.2 client |
+| Kubernetes | v1.31.0 (cluster) |
+| Cilium CLI | v0.19.2 |
+| Calico | v3.28.0 |
+| Helm | 3.x |
+
+---
+
+## Repository Structure
 
 ```
-.
-├── README.md                          ← This file
-├── LICENSE                            ← MIT licence
-├── .gitignore                         ← Excludes logs and temp files
-├── DISCLAIMER.md                      ← Security research disclaimer
+K8s-CNI-policies/
+│
+├── README.md
 │
 ├── clusters/
-│   └── kind-config.yaml              ← Shared KIND cluster config (both clusters)
+│   ├── kind-calico-cluster.yaml
+│   └── kind-cilium-cluster.yaml
+│
+├── cni/
+│   ├── calico/
+│   │   ├── tigera-operator.yaml
+│   │   └── calico-installation.yaml
+│   └── cilium/
+│       └── install-cilium.sh
 │
 ├── policies/
-│   └── default-deny.yaml             ← Kubernetes default-deny NetworkPolicy
+│   └── default-deny-all.yaml
 │
 ├── scripts/
-│   ├── attack-test-suite.sh          ← 25-technique MITRE ATT&CK test suite
-│   └── bypass-test-suite.sh          ← 24-technique CNI bypass test suite
+│   ├── attack-test-suite.sh
+│   ├── bypass-test-suite.sh
+│   └── setup/
+│       ├── 01-os-environment.sh
+│       ├── 02-install-tools.sh
+│       └── 03-deploy-boutique.sh
 │
-├── app/
-│   └── microservices-demo/           ← Google Microservices Demo
-│       └── release/
-│           └── kubernetes-manifests.yaml
+├── results/
+│   ├── calico/
+│   │   ├── phase1/
+│   │   │   ├── kind-calico-cluster-phase1-20260418_113832.txt
+│   │   │   └── kind-calico-cluster-phase1-20260418_113832.csv
+│   │   ├── phase2/
+│   │   │   ├── kind-calico-cluster-phase2-20260420_173652.txt
+│   │   │   └── kind-calico-cluster-phase2-20260420_173652.csv
+│   │   └── phase3-bypass/
+│   │       ├── kind-calico-cluster-bypass-20260422_124120.txt
+│   │       └── kind-calico-cluster-bypass-20260422_124120.csv
+│   │
+│   ├── cilium/
+│   │   ├── phase1/
+│   │   │   ├── kind-cilium-cluster-phase1-20260418_113909.txt
+│   │   │   └── kind-cilium-cluster-phase1-20260418_113909.csv
+│   │   ├── phase2/
+│   │   │   ├── kind-cilium-cluster-phase2-20260420_174146.txt
+│   │   │   └── kind-cilium-cluster-phase2-20260420_174146.csv
+│   │   └── phase3-bypass/
+│   │       ├── kind-cilium-cluster-bypass-20260422_124729.txt
+│   │       └── kind-cilium-cluster-bypass-20260422_124729.csv
+│   │
+│   ├── performance/
+│   │   ├── calico_throughput_no_policy.json
+│   │   ├── calico_throughput_with_policy.json
+│   │   ├── calico_latency_no_policy.json
+│   │   ├── calico_latency_with_policy.json
+│   │   ├── calico_throughput_cpu_run.json
+│   │   ├── calico_cpu_overhead.txt
+│   │   ├── cilium_throughput_no_policy.json
+│   │   ├── cilium_throughput_with_policy.json
+│   │   ├── cilium_latency_no_policy.json
+│   │   ├── cilium_latency_with_policy.json
+│   │   ├── cilium_throughput_cpu_run.json
+│   │   └── cilium_cpu_overhead.txt
+│   │
+│   └── observability/
+│       ├── hubble_attack_log.json
+│       └── calico_iptables_state.txt
 │
-├── results/                          ← Attack suite output (auto-generated)
-│   ├── phase1/
-│   ├── phase2/
-│   └── phase3/
+├── corrected/
+│   ├── kindcalicoclusterphase2_corrected.csv
+│   ├── kindciliumclusterphase2_corrected.csv
+│   ├── kindcalicoclusterbypass_corrected.csv
+│   └── kindciliumclusterbypass_corrected.csv
 │
-└── bypass-results/                   ← Bypass suite output (auto-generated)
+└── docs/
+    ├── corrections.md
+    └── mitre-technique-list.md
 ```
 
 ---
 
-## 3. System Requirements
+## Step-by-Step Reproduction Guide
 
-| Requirement | Minimum | Tested Configuration |
-|-------------|---------|---------------------|
-| OS | Ubuntu 22.04 LTS | Ubuntu 24.04 LTS |
-| RAM | 16 GB | 32 GB |
-| CPU | 8 cores | 12 cores |
-| Disk free | 40 GB | 60 GB |
-| Linux kernel | 5.15+ | 6.17.0-14-generic |
-| Internet | Required | — |
-
-> Both clusters run simultaneously. Each uses approximately 6–8 GB RAM. Running on less than 16 GB will cause pods to be evicted.
+Follow every step in order on a clean Ubuntu installation. Do not skip steps.
 
 ---
 
-## 4. Step 1 — Install Required Tools
+### Step 1 — Fix OS-Level Kernel Limits
 
-Run each block in order. Do not skip any step.
-
-### 1.1 Docker
+KIND runs cluster nodes as Docker containers using full systemd. Without these fixes, KIND cluster creation will hang or fail silently.
 
 ```bash
+# Apply inotify fixes
+sudo sysctl fs.inotify.max_user_instances=512
+sudo sysctl fs.inotify.max_user_watches=524288
+
+# Make permanent across reboots
+cat <<EOF | sudo tee /etc/sysctl.d/99-kind.conf
+fs.inotify.max_user_instances = 512
+fs.inotify.max_user_watches = 524288
+EOF
+
+sudo sysctl --system
+
+# Configure Docker cgroup driver
+sudo mkdir -p /etc/docker
+cat <<EOF | sudo tee /etc/docker/daemon.json
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": { "max-size": "100m" },
+  "storage-driver": "overlay2"
+}
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+```
+
+---
+
+### Step 2 — Install All Required Tools
+
+```bash
+# Docker CE
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg
-
 sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
   sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-
 echo "deb [arch=$(dpkg --print-architecture) \
   signed-by=/etc/apt/keyrings/docker.gpg] \
   https://download.docker.com/linux/ubuntu \
   $(lsb_release -cs) stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
 sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+sudo usermod -aG docker $USER && newgrp docker
 
-sudo usermod -aG docker $USER
-newgrp docker
-
-sudo systemctl enable docker
-sudo systemctl start docker
-
-docker --version
-docker info | grep "Server Version"
-```
-
-### 1.2 kubectl v1.31.0
-
-```bash
+# kubectl v1.31.0 — must match cluster version exactly
 curl -LO "https://dl.k8s.io/release/v1.31.0/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
 rm kubectl
-kubectl version --client
-```
 
-> Use v1.31.0 exactly — this matches the cluster node image. Version mismatch causes API incompatibilities.
-
-### 1.3 KIND v0.24.0
-
-```bash
+# KIND v0.24.0
 curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.24.0/kind-linux-amd64
-chmod +x ./kind
-sudo mv ./kind /usr/local/bin/kind
-kind version
-```
+chmod +x ./kind && sudo mv ./kind /usr/local/bin/kind
 
-### 1.4 Helm
-
-```bash
+# Helm
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-helm version --short
-```
 
-### 1.5 Cilium CLI
-
-```bash
+# Cilium CLI
 CILIUM_CLI_VERSION=$(curl -s \
   https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
-
-curl -L --remote-name-all \
+curl -L --fail --remote-name-all \
   https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-amd64.tar.gz
-
 sudo tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
 rm cilium-linux-amd64.tar.gz
-cilium version --client
 ```
 
-### 1.6 Verify all five tools
+Verify:
 
 ```bash
-echo "=== Tool Verification ===" && \
-docker --version && \
-kubectl version --client --short 2>/dev/null | head -1 && \
-kind version && \
-helm version --short && \
-cilium version --client | head -1
-```
-
-All five must return version strings before continuing.
-
----
-
-## 5. Step 2 — Fix Kernel inotify Limits
-
-> **Mandatory.** Without this fix, running two KIND clusters simultaneously exhausts Linux kernel inotify limits and cluster creation fails with: `could not find a log line that matches Reached target Multi-User System`
-
-```bash
-sudo sysctl fs.inotify.max_user_instances=512
-sudo sysctl fs.inotify.max_user_watches=524288
-
-echo "fs.inotify.max_user_instances=512" | \
-  sudo tee /etc/sysctl.d/99-kind.conf
-echo "fs.inotify.max_user_watches=524288" | \
-  sudo tee -a /etc/sysctl.d/99-kind.conf
-
-sysctl fs.inotify.max_user_instances
-sysctl fs.inotify.max_user_watches
-```
-
-Expected output:
-```
-fs.inotify.max_user_instances = 512
-fs.inotify.max_user_watches = 524288
+docker --version       # expect: Docker version 29.x
+kind --version         # expect: kind v0.24.0
+kubectl version --client
+helm version --short
+cilium version
 ```
 
 ---
 
-## 6. Step 3 — Create KIND Cluster Configuration
+### Step 3 — Create Both KIND Clusters
 
-The file `clusters/kind-config.yaml` is shared by both clusters:
-
-```yaml
+```bash
+# Calico cluster
+cat <<EOF | kind create cluster --name kind-calico-cluster --config=-
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 networking:
   disableDefaultCNI: true
   podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/16"
 nodes:
   - role: control-plane
   - role: worker
   - role: worker
+EOF
+
+# Cilium cluster
+cat <<EOF | kind create cluster --name kind-cilium-cluster --config=-
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  disableDefaultCNI: true
+  podSubnet: "10.245.0.0/16"
+  serviceSubnet: "10.97.0.0/16"
+nodes:
+  - role: control-plane
+  - role: worker
+  - role: worker
+EOF
 ```
 
-**Why each setting matters:**
+> Pod and Service CIDRs use non-overlapping ranges to prevent routing conflicts on the shared host.
 
-`disableDefaultCNI: true` — prevents KIND installing `kindnetd`. If kindnetd runs alongside Calico or Cilium, neither CNI takes exclusive control of packet forwarding and every test result is invalid.
-
-`podSubnet: "10.244.0.0/16"` — explicit CIDR ensures both CNI plugins manage the same IP range. Without this, IPAM conflicts occur silently.
-
-`2 worker nodes` — required for testing inter-node lateral movement and NetworkPolicy enforcement across node boundaries.
-
----
-
-## 7. Step 4 — Build the Calico Cluster
-
-### 4.1 Create the cluster
-
-```bash
-kind create cluster \
-  --name calico-cluster \
-  --config clusters/kind-config.yaml \
-  --image kindest/node:v1.31.0
-```
-
-Nodes will show `NotReady` — correct. No CNI installed yet.
+Verify both clusters are running before continuing:
 
 ```bash
 kubectl get nodes --context kind-calico-cluster
-```
-
-### 4.2 Install Calico via Tigera Operator
-
-> **Order is mandatory.** Install the Tigera Operator FIRST — it registers the CRDs. Applying the Installation CR before the operator is ready produces: `no matches for kind "Installation" in version "operator.tigera.io/v1"`
-
-```bash
-# Step 1: Install Tigera Operator
-kubectl apply --context kind-calico-cluster \
-  -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/tigera-operator.yaml
-
-# Wait for operator to be Available
-kubectl wait deployment tigera-operator \
-  -n tigera-operator \
-  --context kind-calico-cluster \
-  --for=condition=Available \
-  --timeout=120s
-
-# Step 2: Apply Installation CR
-kubectl apply --context kind-calico-cluster \
-  -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/custom-resources.yaml
-```
-
-### 4.3 Wait for Calico pods
-
-```bash
-watch kubectl get pods -n calico-system --context kind-calico-cluster
-```
-
-Wait until all pods show `Running` — takes 3–5 minutes. Press `Ctrl+C` when done.
-
-Expected:
-```
-calico-kube-controllers-xxx   1/1   Running
-calico-node-xxx (x3)          1/1   Running
-calico-typha-xxx              1/1   Running
-csi-node-driver-xxx (x3)      2/2   Running
-```
-
-### 4.4 Verify nodes Ready
-
-```bash
-kubectl get nodes --context kind-calico-cluster
-```
-
-All three nodes must show `Ready`.
-
----
-
-## 8. Step 5 — Build the Cilium Cluster
-
-### 5.1 Create the cluster
-
-```bash
-kind create cluster \
-  --name cilium-cluster \
-  --config clusters/kind-config.yaml \
-  --image kindest/node:v1.31.0
-```
-
-### 5.2 Install Cilium with Hubble
-
-```bash
-cilium install \
-  --context kind-cilium-cluster \
-  --version 1.15.0
-
-cilium hubble enable \
-  --context kind-cilium-cluster \
-  --ui
-```
-
-### 5.3 Wait for Cilium pods
-
-```bash
-watch kubectl get pods -n kube-system --context kind-cilium-cluster | \
-  grep -E "cilium|hubble"
-```
-
-Wait until all pods show `Running` — takes 3–5 minutes. Press `Ctrl+C` when done.
-
-Expected:
-```
-cilium-xxx (x3)          1/1   Running
-cilium-envoy-xxx (x3)    1/1   Running
-cilium-operator-xxx (x2) 1/1   Running
-hubble-relay-xxx         1/1   Running
-hubble-ui-xxx            2/2   Running
-```
-
-### 5.4 Verify nodes Ready
-
-```bash
 kubectl get nodes --context kind-cilium-cluster
+# All nodes must show Ready status
 ```
 
 ---
 
-## 9. Step 6 — Verify Both Clusters Are Identical
+### Step 4 — Install Calico on Cluster A
 
-Every check must pass before continuing. These confirm the controlled experiment is valid.
-
-### 6.1 Kubernetes version parity
-
-```bash
-for CTX in kind-calico-cluster kind-cilium-cluster; do
-  echo "=== $CTX ==="
-  kubectl get nodes --context $CTX \
-    -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}'
-  echo ""
-done
-```
-
-Both must print `v1.31.0`.
-
-### 6.2 Confirm kindnetd is absent
+> **Critical:** Install the Tigera Operator first and wait for it to be ready before applying the Installation CR. The Operator must register the CRDs before the CR can be accepted.
+> **Also critical:** Use `kubectl create`, not `kubectl apply`, for the Tigera Operator on Kubernetes v1.31.0.
 
 ```bash
-for CTX in kind-calico-cluster kind-cilium-cluster; do
-  echo "=== $CTX ==="
-  kubectl get pods -n kube-system --context $CTX | grep kindnet
-  echo "(blank above = kindnetd absent = CORRECT)"
-done
-```
-
-Any `kindnet` pod means cluster was built without `disableDefaultCNI: true`. Delete and recreate it.
-
-### 6.3 Full side-by-side identity check
-
-```bash
-for CTX in kind-calico-cluster kind-cilium-cluster; do
-  echo ""
-  echo "Cluster : $CTX"
-  printf "  Nodes    : " && \
-    kubectl get nodes --context $CTX --no-headers | wc -l
-  printf "  K8s      : " && \
-    kubectl get nodes --context $CTX \
-      -o jsonpath='{.items[0].status.nodeInfo.kubeletVersion}' && echo ""
-  printf "  OS       : " && \
-    kubectl get nodes --context $CTX \
-      -o jsonpath='{.items[0].status.nodeInfo.osImage}' && echo ""
-  printf "  Kernel   : " && \
-    kubectl get nodes --context $CTX \
-      -o jsonpath='{.items[0].status.nodeInfo.kernelVersion}' && echo ""
-  printf "  Runtime  : " && \
-    kubectl get nodes --context $CTX \
-      -o jsonpath='{.items[0].status.nodeInfo.containerRuntimeVersion}' && echo ""
-done
-```
-
-Every value must be identical except cluster name and CNI.
-
----
-
-## 10. Step 7 — Deploy Google Microservices Demo
-
-### 7.1 Deploy to both clusters
-
-```bash
-kubectl apply \
-  -f app/microservices-demo/release/kubernetes-manifests.yaml \
+# Step 4a — Install Tigera Operator
+kubectl create -f \
+  https://raw.githubusercontent.com/projectcalico/calico/v3.28.0/manifests/tigera-operator.yaml \
   --context kind-calico-cluster
 
-kubectl apply \
-  -f app/microservices-demo/release/kubernetes-manifests.yaml \
+# Wait for operator to be ready
+kubectl wait --for=condition=Available deployment/tigera-operator \
+  -n tigera-operator --timeout=120s \
+  --context kind-calico-cluster
+
+# Step 4b — Apply Installation CR
+cat <<EOF | kubectl apply --context kind-calico-cluster -f -
+apiVersion: operator.tigera.io/v1
+kind: Installation
+metadata:
+  name: default
+spec:
+  calicoNetwork:
+    ipPools:
+    - cidr: 10.244.0.0/16
+      encapsulation: VXLANCrossSubnet
+      natOutgoing: Enabled
+      nodeSelector: all()
+EOF
+
+# Wait for Calico pods
+watch kubectl get pods -n calico-system --context kind-calico-cluster
+# Wait until all pods are Running
+```
+
+---
+
+### Step 5 — Install Cilium with Hubble on Cluster B
+
+```bash
+helm repo add cilium https://helm.cilium.io/
+helm repo update
+
+helm install cilium cilium/cilium \
+  --version 1.14.0 \
+  --namespace kube-system \
+  --kube-context kind-cilium-cluster \
+  --set image.pullPolicy=IfNotPresent \
+  --set ipam.mode=kubernetes \
+  --set hubble.relay.enabled=true \
+  --set hubble.ui.enabled=true \
+  --set hubble.enabled=true
+
+# Wait for Cilium to be ready
+cilium status --wait --context kind-cilium-cluster
+
+# Enable Hubble
+cilium hubble enable --context kind-cilium-cluster
+```
+
+---
+
+### Step 6 — Deploy Google Microservices Demo
+
+```bash
+git clone https://github.com/GoogleCloudPlatform/microservices-demo.git
+cd microservices-demo
+
+# Deploy to Calico cluster
+kubectl create namespace boutique --context kind-calico-cluster
+kubectl apply -f release/kubernetes-manifests.yaml \
+  -n boutique --context kind-calico-cluster
+
+# Deploy to Cilium cluster
+kubectl create namespace boutique --context kind-cilium-cluster
+kubectl apply -f release/kubernetes-manifests.yaml \
+  -n boutique --context kind-cilium-cluster
+```
+
+Wait for all pods to reach Running status (3–5 minutes on first pull):
+
+```bash
+kubectl get pods -n boutique --context kind-calico-cluster
+kubectl get pods -n boutique --context kind-cilium-cluster
+```
+
+---
+
+### Step 7 — Deploy Attacker Pod
+
+```bash
+# Calico cluster
+kubectl run attacker-netshoot \
+  --image=nicolaka/netshoot \
+  --restart=Never -n boutique \
+  --command -- sleep 3600 \
+  --context kind-calico-cluster
+
+# Cilium cluster
+kubectl run attacker-netshoot \
+  --image=nicolaka/netshoot \
+  --restart=Never -n boutique \
+  --command -- sleep 3600 \
   --context kind-cilium-cluster
 ```
 
-### 7.2 Wait for all pods
-
-```bash
-watch -n 5 "
-echo '=== CALICO ===' && \
-kubectl get pods -n default --context kind-calico-cluster --no-headers && \
-echo '' && \
-echo '=== CILIUM ===' && \
-kubectl get pods -n default --context kind-cilium-cluster --no-headers"
-```
-
-All 12 pods must show `1/1 Running` on both clusters. Takes 3–6 minutes.
-
-Expected pods: `adservice`, `cartservice`, `checkoutservice`, `currencyservice`, `emailservice`, `frontend`, `loadgenerator`, `paymentservice`, `productcatalogservice`, `recommendationservice`, `redis-cart`, `shippingservice`
-
-### 7.3 Baseline verification
-
-```bash
-for CTX in kind-calico-cluster kind-cilium-cluster; do
-  echo ""
-  echo "Cluster: $CTX"
-  printf "  Pods Running    : " && \
-    kubectl get pods -n default --context $CTX \
-      --no-headers | grep -c "Running"
-  printf "  Services        : " && \
-    kubectl get svc -n default --context $CTX \
-      --no-headers | wc -l
-  printf "  NetworkPolicies : " && \
-    kubectl get networkpolicies -n default --context $CTX \
-      --no-headers 2>/dev/null | wc -l
-done
-```
-
-Both must show: `Pods Running: 12`, `Services: 13`, `NetworkPolicies: 0`
-
 ---
 
-## 11. Step 8 — Access the Application
-
-Open two terminals simultaneously:
-
-**Terminal 1 — Calico cluster (port 8081):**
-```bash
-kubectl port-forward svc/frontend-external 8081:80 \
-  --context kind-calico-cluster
-```
-
-**Terminal 2 — Cilium cluster (port 8082):**
-```bash
-kubectl port-forward svc/frontend-external 8082:80 \
-  --context kind-cilium-cluster
-```
-
-Open in browser:
-- Calico: http://localhost:8081
-- Cilium: http://localhost:8082
-
-The `loadgenerator` pod runs continuously creating realistic shopping traffic. `EXTERNAL-IP` showing `<pending>` is expected — KIND has no cloud load balancer.
-
----
-
-## 12. Step 9 — Prepare the Attack Environment
-
-### 9.1 Make scripts executable
+### Step 8 — Run Phase 1 (Baseline — No Policy)
 
 ```bash
-chmod +x scripts/attack-test-suite.sh scripts/bypass-test-suite.sh
-mkdir -p results/phase1 results/phase2 results/phase3 bypass-results
-```
+chmod +x scripts/attack-test-suite.sh
 
-### 9.2 Deploy the attacker pod
-
-The attacker pod (`nicolaka/netshoot`) simulates a compromised application pod. It has `curl`, `nc`, `nmap`, `tcpdump`, `redis-cli`, `dig`, `iptables`, and `kubectl` available.
-
-```bash
-for CTX in kind-calico-cluster kind-cilium-cluster; do
-  kubectl run attacker-netshoot \
-    --image=nicolaka/netshoot \
-    --restart=Never \
-    --context $CTX \
-    -n default \
-    --overrides='{
-      "spec": {
-        "containers": [{
-          "name": "attacker-netshoot",
-          "image": "nicolaka/netshoot",
-          "command": ["sleep", "86400"],
-          "securityContext": {
-            "capabilities": {
-              "add": ["NET_ADMIN", "NET_RAW"]
-            }
-          }
-        }]
-      }
-    }'
-done
-
-# Wait for both to be Ready
-kubectl wait pod attacker-netshoot -n default \
-  --context kind-calico-cluster \
-  --for=condition=Ready --timeout=90s
-
-kubectl wait pod attacker-netshoot -n default \
-  --context kind-cilium-cluster \
-  --for=condition=Ready --timeout=90s
-
-# Verify
-kubectl get pods -n default --context kind-calico-cluster | grep attacker
-kubectl get pods -n default --context kind-cilium-cluster | grep attacker
-```
-
-Both must show `1/1 Running`.
-
----
-
-## 13. Step 10 — Phase 1: Baseline Attack Testing
-
-Phase 1 runs all 25 MITRE ATT&CK techniques with zero NetworkPolicies applied. Establishes the pre-policy attack surface.
-
-```bash
 ./scripts/attack-test-suite.sh kind-calico-cluster phase1
 ./scripts/attack-test-suite.sh kind-cilium-cluster phase1
 ```
 
-### Expected Phase 1 outcome
+---
 
-Both clusters must produce identical results. Any difference means the clusters are not equivalent.
+### Step 9 — Apply Default-Deny NetworkPolicy
 
-| Test group | Expected | Reason |
-|-----------|----------|--------|
-| Network attacks (T1190, T1046, T1210, T1021.004, T1048, T1499) | ALLOWED | Kubernetes default-allow networking |
-| API server attacks (T1613, T1552.007b, T1609, T1489, T1610, T1059.013) | BLOCKED | RBAC — independent of CNI |
-| Filesystem attacks (T1552.007, T1552.004, T1611, T1040, T1049, T1083) | ALLOWED | No network connection required |
+```bash
+kubectl apply -f policies/default-deny-all.yaml \
+  -n boutique --context kind-calico-cluster
 
-BLOCKED results for API server tests in Phase 1 are RBAC-enforced — not CNI. Document these separately.
+kubectl apply -f policies/default-deny-all.yaml \
+  -n boutique --context kind-cilium-cluster
 
-### Output location
-
-```
-results/kind-calico-cluster-phase1-TIMESTAMP.txt   ← Human-readable report
-results/kind-calico-cluster-phase1-TIMESTAMP.csv   ← ATT&CK Coverage Matrix CSV
-results/kind-cilium-cluster-phase1-TIMESTAMP.txt
-results/kind-cilium-cluster-phase1-TIMESTAMP.csv
+# Verify
+kubectl get networkpolicy -n boutique --context kind-calico-cluster
+kubectl get networkpolicy -n boutique --context kind-cilium-cluster
 ```
 
 ---
 
-## 14. Step 11 — Phase 2: Policy Enforcement Testing
-
-Phase 2 applies a strict default-deny NetworkPolicy then re-runs all 25 techniques.
-
-### 11.1 The default-deny policy
-
-`policies/default-deny.yaml`:
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: default-deny-all
-  namespace: default
-spec:
-  podSelector: {}
-  policyTypes:
-  - Ingress
-  - Egress
-```
-
-`podSelector: {}` selects every pod in the namespace. Both `Ingress` and `Egress` are blocked with no allow exceptions — complete pod isolation.
-
-> After applying, the application stops working. This is correct — the policy is enforcing. Do not add allow rules during Phase 2.
-
-### 11.2 Pre-stage filesystem tests inside pods
-
-The default-deny egress policy cuts the `kubectl exec` API server tunnel once applied. Stage filesystem tests inside pods BEFORE applying the policy.
+### Step 10 — Run Phase 2 (Default-Deny Enforcement)
 
 ```bash
-# Stage on Calico pod
-kubectl exec attacker-netshoot -n default --context kind-calico-cluster -- sh -c '
-cat > /tmp/fs-tests.sh << "SCRIPT"
-#!/bin/sh
-echo "=== T1552.007 SA TOKEN ==="
-TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token 2>/dev/null)
-if [ ${#TOKEN} -gt 20 ]; then echo "ALLOWED — token readable, ${#TOKEN} chars"
-else echo "BLOCKED — token not readable"; fi
-echo "=== T1552.004 ENV VARS ==="
-COUNT=$(env | grep -cE "SERVICE_HOST|SERVICE_PORT|REDIS|PAYMENT|CHECKOUT" 2>/dev/null || echo 0)
-if [ "$COUNT" -gt 0 ]; then echo "ALLOWED — ${COUNT} sensitive vars found"
-else echo "BLOCKED"; fi
-echo "=== T1040 TCPDUMP ==="
-RESULT=$(timeout 5 tcpdump -i eth0 -c 3 -nn 2>&1 | tail -2)
-echo "$RESULT" | grep -qiE "IP |captured|listening" && echo "ALLOWED — packets captured" || echo "BLOCKED — $RESULT"
-echo "=== T1049 PROC NET TCP ==="
-COUNT=$(cat /proc/net/tcp 2>/dev/null | wc -l)
-[ "$COUNT" -gt 1 ] && echo "ALLOWED — ${COUNT} TCP entries" || echo "BLOCKED"
-echo "=== T1083 SECRET FILES ==="
-COUNT=$(find /var/run/secrets -type f 2>/dev/null | wc -l)
-[ "$COUNT" -gt 0 ] && echo "ALLOWED — ${COUNT} files" || echo "BLOCKED"
-echo "=== T1611 HOST FILESYSTEM ==="
-RESULT=$(ls /proc/1/root/etc/ 2>/dev/null | head -3)
-[ -n "$RESULT" ] && echo "ALLOWED — $RESULT" || echo "BLOCKED"
-echo "=== T1562.001 IPTABLES ==="
-RESULT=$(iptables -L INPUT 2>&1 | head -2)
-echo "$RESULT" | grep -qiE "Chain|policy" && echo "ALLOWED — rules visible" || echo "BLOCKED"
-echo "=== DONE ==="
-SCRIPT
-chmod +x /tmp/fs-tests.sh && echo "Staged on CALICO"
-'
-
-# Stage on Cilium pod
-kubectl exec attacker-netshoot -n default --context kind-cilium-cluster -- sh -c '
-cat > /tmp/fs-tests.sh << "SCRIPT"
-#!/bin/sh
-echo "=== T1552.007 SA TOKEN ==="
-TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token 2>/dev/null)
-if [ ${#TOKEN} -gt 20 ]; then echo "ALLOWED — token readable, ${#TOKEN} chars"
-else echo "BLOCKED — token not readable"; fi
-echo "=== T1552.004 ENV VARS ==="
-COUNT=$(env | grep -cE "SERVICE_HOST|SERVICE_PORT|REDIS|PAYMENT|CHECKOUT" 2>/dev/null || echo 0)
-if [ "$COUNT" -gt 0 ]; then echo "ALLOWED — ${COUNT} sensitive vars found"
-else echo "BLOCKED"; fi
-echo "=== T1040 TCPDUMP ==="
-RESULT=$(timeout 5 tcpdump -i eth0 -c 3 -nn 2>&1 | tail -2)
-echo "$RESULT" | grep -qiE "IP |captured|listening" && echo "ALLOWED — packets captured" || echo "BLOCKED — $RESULT"
-echo "=== T1049 PROC NET TCP ==="
-COUNT=$(cat /proc/net/tcp 2>/dev/null | wc -l)
-[ "$COUNT" -gt 1 ] && echo "ALLOWED — ${COUNT} TCP entries" || echo "BLOCKED"
-echo "=== T1083 SECRET FILES ==="
-COUNT=$(find /var/run/secrets -type f 2>/dev/null | wc -l)
-[ "$COUNT" -gt 0 ] && echo "ALLOWED — ${COUNT} files" || echo "BLOCKED"
-echo "=== T1611 HOST FILESYSTEM ==="
-RESULT=$(ls /proc/1/root/etc/ 2>/dev/null | head -3)
-[ -n "$RESULT" ] && echo "ALLOWED — $RESULT" || echo "BLOCKED"
-echo "=== T1562.001 IPTABLES ==="
-RESULT=$(iptables -L INPUT 2>&1 | head -2)
-echo "$RESULT" | grep -qiE "Chain|policy" && echo "ALLOWED — rules visible" || echo "BLOCKED"
-echo "=== DONE ==="
-SCRIPT
-chmod +x /tmp/fs-tests.sh && echo "Staged on CILIUM"
-'
-```
-
-### 11.3 Apply policy then run tests immediately
-
-```bash
-# Apply policy to both clusters
-kubectl apply -f policies/default-deny.yaml --context kind-calico-cluster
-kubectl apply -f policies/default-deny.yaml --context kind-cilium-cluster
-
-# Run pre-staged filesystem tests IMMEDIATELY after applying policy
-echo "=== CALICO FILESYSTEM TESTS ===" && \
-kubectl exec attacker-netshoot -n default --context kind-calico-cluster \
-  -- /tmp/fs-tests.sh
-
-echo "=== CILIUM FILESYSTEM TESTS ===" && \
-kubectl exec attacker-netshoot -n default --context kind-cilium-cluster \
-  -- /tmp/fs-tests.sh
-
-# Run Phase 2 network tests
 ./scripts/attack-test-suite.sh kind-calico-cluster phase2
 ./scripts/attack-test-suite.sh kind-cilium-cluster phase2
 ```
 
-### 11.4 Expected Phase 2 outcome
-
-All 18 network-layer attack techniques return BLOCKED on both clusters. Seven filesystem and capability-based tests (T1552.007, T1552.004, T1611, T1040, T1083, T1557.002, T1562.001) remain ALLOWED — they operate below the L3/L4 CNI enforcement boundary and cannot be mitigated by NetworkPolicy.
-
 ---
 
-## 15. Step 12 — Phase 3: CNI Bypass Testing
-
-Phase 3 runs 4 bypass techniques against the active default-deny policy.
+### Step 11 — Run Phase 3 (CNI Bypass Testing)
 
 ```bash
-# Verify policy is still applied
-kubectl get networkpolicies -n default --context kind-calico-cluster
-kubectl get networkpolicies -n default --context kind-cilium-cluster
-
-./scripts/attack-test-suite.sh kind-calico-cluster phase3
-./scripts/attack-test-suite.sh kind-cilium-cluster phase3
-```
-
-### Phase 3 techniques
-
-| ID | Technique | What is tested |
-|----|-----------|----------------|
-| B1 | T1599 — IPv6 Gap | Whether default-deny covers IPv6 as well as IPv4 |
-| B2 | T1571 — Non-Standard Port | Whether default-deny covers all ports or only declared ones |
-| B3 | T1611 — hostNetwork Pod | Whether CNI enforces beyond pod network namespace |
-| B4 | T1046 — DNS Post-Deny | Whether DNS egress survives a strict default-deny |
-
-> B1 returns ERROR if IPv6 is not enabled in KIND config — expected with this configuration.
-
-> B3 produces different results between Calico and Cilium. See Step 14 for the corrected manual test that produces accurate results.
-
----
-
-## 16. Step 13 — Extended Bypass Test Suite
-
-24 bypass techniques across 6 categories tested against the active default-deny policy.
-
-```bash
-kubectl apply -f policies/default-deny.yaml --context kind-calico-cluster
-kubectl apply -f policies/default-deny.yaml --context kind-cilium-cluster
+chmod +x scripts/bypass-test-suite.sh
 
 ./scripts/bypass-test-suite.sh kind-calico-cluster
 ./scripts/bypass-test-suite.sh kind-cilium-cluster
 ```
 
-### Bypass categories
-
-| Category | Tests | What is tested |
-|----------|-------|----------------|
-| Cat 1 — Network Namespace | B01–B04 | hostNetwork, hostPID, hostIPC, privileged containers |
-| Cat 2 — Protocol and Port | B05–B09 | IPv6, UDP, SCTP, high port ranges, ICMP |
-| Cat 3 — Service and Routing | B10–B13 | NodePort, direct pod IP, DNS enumeration, link-local |
-| Cat 4 — Kernel and Capability | B14–B17 | Raw sockets, iptables manipulation, /proc pivot, loopback |
-| Cat 5 — CNI-Specific | B18–B20 | Race condition, cross-namespace, headless service |
-| Cat 6 — Application Layer | B21–B24 | HTTP CONNECT, DNS tunneling, WebSocket upgrade, gRPC reflection |
-
-Results saved to `bypass-results/`.
-
-> **Note on B15 (iptables flush):** Both clusters record the same result but the security meaning differs. On Calico, flushing the iptables FORWARD chain removes Calico's actual enforcement rules — policy is unenforced until calico-node rewrites them. On Cilium, the same flush has zero effect — Cilium's enforcement lives in eBPF maps attached to veth interfaces, completely separate from netfilter.
-
-> **Note on Category 1 (B01–B04):** The automated script has a status parsing bug that causes running pods to be classified as errors. Use the manual test in Step 14 for accurate B01 results.
-
 ---
 
-## 17. Step 14 — B01 hostNetwork Manual Test
+### Preserving Cluster State Between Sessions
 
-This manual test produces the correct B01 result. It bypasses DNS to avoid false BLOCKED results caused by default-deny blocking UDP 53.
-
-### 14.1 Get redis-cart ClusterIPs
+> KIND clusters do not survive Docker being stopped at the OS level. Always stop containers cleanly before shutting down.
 
 ```bash
-echo "CALICO redis-cart IP:" && \
-kubectl get svc redis-cart -n default --context kind-calico-cluster \
-  -o jsonpath='{.spec.clusterIP}' && echo ""
+# Before shutdown
+docker stop $(docker ps -q --filter "name=kind")
 
-echo "CILIUM redis-cart IP:" && \
-kubectl get svc redis-cart -n default --context kind-cilium-cluster \
-  -o jsonpath='{.spec.clusterIP}' && echo ""
-```
-
-Note both IPs before continuing.
-
-### 14.2 Ensure default-deny is applied
-
-```bash
-kubectl apply -f policies/default-deny.yaml --context kind-calico-cluster
-kubectl apply -f policies/default-deny.yaml --context kind-cilium-cluster
-```
-
-### 14.3 Deploy hostNetwork pods
-
-```bash
-for CTX in kind-calico-cluster kind-cilium-cluster; do
-  kubectl run bypass-hostnet \
-    --image=nicolaka/netshoot \
-    --restart=Never -n default \
-    --context $CTX \
-    --overrides='{"spec":{"hostNetwork":true,"containers":[{"name":"bypass-hostnet","image":"nicolaka/netshoot","command":["sleep","120"]}]}}'
-done
-
-sleep 25
-```
-
-### 14.4 Test using direct ClusterIP — no DNS
-
-Replace `<CALICO_REDIS_IP>` and `<CILIUM_REDIS_IP>` with the IPs from Step 14.1:
-
-```bash
-echo "=== CALICO hostNetwork bypass ===" && \
-kubectl exec bypass-hostnet -n default --context kind-calico-cluster \
-  -- sh -c "nc -z -w3 <CALICO_REDIS_IP> 6379 && echo BYPASS_CONFIRMED || echo BLOCKED"
-
-echo "=== CILIUM hostNetwork bypass ===" && \
-kubectl exec bypass-hostnet -n default --context kind-cilium-cluster \
-  -- sh -c "nc -z -w3 <CILIUM_REDIS_IP> 6379 && echo BYPASS_CONFIRMED || echo BLOCKED"
-```
-
-> Using the hostname instead of the direct IP will always return a false BLOCKED because DNS is cut by default-deny. Always use the ClusterIP directly for this test.
-
-### 14.5 Cleanup
-
-```bash
-for CTX in kind-calico-cluster kind-cilium-cluster; do
-  kubectl delete pod bypass-hostnet -n default \
-    --context $CTX --ignore-not-found=true
-done
-```
-
----
-
-## 18. Step 15 — Remove Policies and Restore Clusters
-
-After all testing is complete:
-
-```bash
-kubectl delete networkpolicy default-deny-all \
-  -n default --context kind-calico-cluster
-kubectl delete networkpolicy default-deny-all \
-  -n default --context kind-cilium-cluster
-
-# Verify removed
-kubectl get networkpolicies -n default --context kind-calico-cluster
-kubectl get networkpolicies -n default --context kind-cilium-cluster
-# Both output: No resources found
-```
-
-Wait 60 seconds then verify application recovery:
-
-```bash
-kubectl get pods -n default --context kind-calico-cluster
-kubectl get pods -n default --context kind-cilium-cluster
-```
-
-All 12 pods return to `Running` automatically — no redeployment needed.
-
----
-
-## 19. Step 16 — Cluster Persistence and Safe Shutdown
-
-> KIND clusters run as Docker containers. When Docker stops at OS shutdown, cluster state is lost. Always stop cluster containers cleanly before shutting down.
-
-### Safe shutdown — run before every PC shutdown
-
-```bash
-docker stop \
-  calico-cluster-control-plane \
-  calico-cluster-worker \
-  calico-cluster-worker2 \
-  cilium-cluster-control-plane \
-  cilium-cluster-worker \
-  cilium-cluster-worker2
-```
-
-### Start clusters after boot
-
-```bash
-sudo systemctl start docker
-
-docker start \
-  calico-cluster-control-plane \
-  calico-cluster-worker \
-  calico-cluster-worker2 \
-  cilium-cluster-control-plane \
-  cilium-cluster-worker \
-  cilium-cluster-worker2
-
-sleep 90
-
+# After restarting your machine
+docker start $(docker ps -aq --filter "name=kind")
+# Wait 60 seconds then verify
 kubectl get nodes --context kind-calico-cluster
 kubectl get nodes --context kind-cilium-cluster
-kubectl get pods -n default --context kind-calico-cluster
-kubectl get pods -n default --context kind-cilium-cluster
 ```
-
-All nodes and pods recover automatically.
-
-### Full rebuild if clusters are lost
-
-If `kind get clusters` returns nothing, rebuild from Step 4. Takes approximately 30 minutes.
 
 ---
 
-## 20. Known Errors and Fixes
+## Test Script Usage Reference
 
-### inotify limit error
-
-```
-could not find a log line that matches "Reached target Multi-User System"
-```
-**Fix:** Run Step 2 — mandatory for dual-cluster setup.
-
----
-
-### Calico CRD not found
-
-```
-no matches for kind "Installation" in version "operator.tigera.io/v1"
-```
-**Fix:** Operator not ready before CR was applied.
 ```bash
-kubectl wait deployment tigera-operator -n tigera-operator \
-  --context kind-calico-cluster \
-  --for=condition=Available --timeout=120s
+# Attack test suite
+./scripts/attack-test-suite.sh <cluster-context> <phase>
 
-kubectl apply --context kind-calico-cluster \
-  -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/custom-resources.yaml
+# phase options: phase1, phase2
+./scripts/attack-test-suite.sh kind-calico-cluster phase1
+./scripts/attack-test-suite.sh kind-cilium-cluster phase2
+
+# Bypass test suite
+./scripts/bypass-test-suite.sh <cluster-context>
+./scripts/bypass-test-suite.sh kind-calico-cluster
 ```
+
+Each script produces two output files per run:
+- `.txt` — human-readable report with ALLOWED / BLOCKED / ERROR per technique
+- `.csv` — structured data for analysis with timestamps
 
 ---
 
-### Port already in use
+## Data Corrections
 
-```
-error: address already in use
-```
-**Fix:**
-```bash
-ss -tlnp | grep 8081
-kill <PID>
-kubectl port-forward svc/frontend-external 8081:80 --context kind-calico-cluster
-```
+Two false positives were identified in the raw CSV output after testing was complete. Both were caused by the attack script classifier matching the substring `communications` inside a DNS timeout error message and incorrectly recording ALLOWED instead of BLOCKED.
 
----
+| File | Technique | Raw Result | Corrected Result | Reason |
+|---|---|---|---|---|
+| Phase 2 — both clusters | T1071.004 | ALLOWED | BLOCKED | DNS query timed out; classifier triggered on error string |
+| Phase 3 — both clusters | B22 | ALLOWED | BLOCKED | Identical DNS timeout pattern |
 
-### Attacker pod in Unknown state
-
-```
-attacker-netshoot   0/1   Unknown
-```
-**Fix:**
-```bash
-kubectl delete pod attacker-netshoot -n default \
-  --context kind-calico-cluster --force --grace-period=0
-kubectl delete pod attacker-netshoot -n default \
-  --context kind-cilium-cluster --force --grace-period=0
-```
-The attack-test-suite.sh script recreates the pod automatically on the next run.
+Original uncorrected files are preserved in `results/`. Corrected files are in `corrected/` with a `_corrected` suffix. Full documentation is in `docs/corrections.md`.
 
 ---
 
-### B01 hostNetwork shows Name does not resolve
+## Known Issues and Fixes
 
-```
-nc: getaddrinfo for host "redis-cart.default.svc.cluster.local": Name does not resolve
-```
-**Fix:** Default-deny blocks DNS. Use the direct ClusterIP — see Step 14.
+**Tigera Operator install fails on Kubernetes v1.31.0**
+Use `kubectl create` not `kubectl apply` for the Tigera Operator manifest. See Step 4.
 
----
+**KIND cluster creation hangs indefinitely**
+Apply inotify kernel fixes in Step 1 before creating any clusters.
 
-### kubectl exec fails during Phase 2
+**Attacker pod ImagePullBackOff in Phase 3 (B01–B04)**
+Under default-deny egress, the attacker pod image cannot be pulled from the registry. B01–B04 tests record ERROR in automated output. B01 was manually retested using a pre-staged image. See `docs/corrections.md` for full classification details.
 
-Default-deny blocks the API server exec websocket tunnel into pods. This is expected — the policy is working. Network-layer tests are unaffected since a failed TCP connection correctly returns BLOCKED. Pre-stage filesystem tests before applying the policy — see Step 11.2.
-
----
-
-### kind get clusters returns nothing
-
-```
-No kind clusters found.
-```
-**Fix:** Clusters destroyed at shutdown. Run the safe shutdown procedure in Step 16 before every shutdown. Rebuild from Step 4 to recover.
+**Cilium pods stuck in Init state**
+Ensure all cluster nodes show Ready status before installing Cilium. If pods remain stuck after 3 minutes, delete and reinstall the Cilium DaemonSet.
 
 ---
 
-## Acknowledgements
+## References
 
-- [Google Cloud Platform — Microservices Demo](https://github.com/GoogleCloudPlatform/microservices-demo)
-- [Tigera — Calico CNI](https://github.com/projectcalico/calico)
-- [Cilium Authors — Cilium + Hubble](https://github.com/cilium/cilium)
-- [MITRE Corporation — ATT&CK for Containers](https://attack.mitre.org/matrices/enterprise/containers/)
-- [KIND — Kubernetes IN Docker](https://github.com/kubernetes-sigs/kind)
+| Paper | DOI |
+|---|---|
+| Budigiri et al. 2021 — Network policies in Kubernetes | 10.1109/EuCNC/6GSummit51104.2021.9482526 |
+| Kim et al. 2025 — Comparative security analysis of CNI plugins | 10.1109/ACCESS.2025.3543841 |
+| Minna et al. 2021 — Security implications of Kubernetes networking | IEEE Security & Privacy vol. 19 no. 5 |
+| Soldani et al. 2023 — eBPF cloud-native observability | 10.1109/ACCESS.2023.3281480 |
+| MITRE ATT&CK for Containers v18.1 | attack.mitre.org/matrices/enterprise/containers |
+| NSA/CISA Kubernetes Hardening Guidance | media.defense.gov 2022 |
 
 ---
 
-## Citation
+## Licence
 
-```
-Bhikadiya, S.B. (2026). Security Challenges in Container Orchestration:
-Kubernetes Vulnerabilities, Network Policies, and Threat Mitigation Strategies.
-MSc Dissertation, CT7P01. Student ID: 24051080.
-```
+This repository is made available for academic reproducibility purposes. All scripts, configurations, and data files are original work produced for CT7P01 dissertation research at London Metropolitan University, May 2026.
